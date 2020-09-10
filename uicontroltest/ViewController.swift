@@ -16,10 +16,9 @@ class ViewController: UIViewController {
     override func viewDidLoad() {
         super.viewDidLoad()
            
-        myCustomControl.starHeight = 50
         myCustomControl.starWidth = 51.5
         myCustomControl.maximumValue = 5
-        myCustomControl.contentHorizontalAlignment = .right
+        myCustomControl.contentHorizontalAlignment = .center
         
         myCustomControl.addTarget(self, action: #selector(ViewController.handleValueChanged(_:)), for: .valueChanged)
         updateLabel()
