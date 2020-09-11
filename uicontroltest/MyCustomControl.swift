@@ -204,23 +204,21 @@ private class StarLayer: CAShapeLayer {
         self.bounds = bounds
         self.position = CGPoint(x: self.bounds.midX, y: self.bounds.midY)
         
-        let startX = Double(self.bounds.midX)
+        let startX = self.bounds.midX
         // Середина звезды по высоте находится не в середине прямоугольника, а чуть ниже
-        let startY = Double(self.bounds.midY * 1.05)
+        let startY: CGFloat = self.bounds.midY * 1.05
         // Добавляется stroke толщиной в 10% от размера звезды
         self.lineWidth = self.bounds.size.width * 0.1
         // Размер звезды уменьшается на 10% так как добавляется stroke
-        let width = self.bounds.size.width * 0.9
+        let width: CGFloat = self.bounds.size.width * 0.9
         /* Радиус описанной окружности находится по формуле
          https://ru.wikipedia.org/wiki/Правильный_пятиугольник */
-        let radius = Double(width / 1.902)
-                        
-        var points: Array<CGPoint> = []
-        
+        let radius: CGFloat = width / 1.902
+                
         // Пять точек звезды в соответствии с формулой
-        for k in 0...4 {
-            let value: Double = ((2 * .pi * Double(k)) / 5) + (.pi / 2)
-            points.append(CGPoint(x: startX + radius * -cos(value), y: startY + radius * -sin(value)))
+        let points: [CGPoint] = (0...4).map { number in
+            let value: CGFloat = ((2 * .pi * CGFloat(number)) / 5) + (.pi / 2)
+            return CGPoint(x: startX + radius * -cos(value), y: startY + radius * -sin(value))
         }
             
         // Звезда отрисовывается линиями по точкам, через одну
