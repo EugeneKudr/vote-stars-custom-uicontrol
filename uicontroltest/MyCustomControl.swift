@@ -41,22 +41,23 @@ class MyCustomControl: UIControl {
        
     private var starHeight: CGFloat = 23.75
     private (set) var value: Int = 0
-    private var stars: [Star] = []
-    private var oldFrame: CGRect?
+    private var stars: [StarLayer] = []
+    private var oldFrame: CGRect
     private let generator = UISelectionFeedbackGenerator()
     
     override init(frame: CGRect) {
+        oldFrame = frame
         super.init(frame: frame)
         commonInit()
     }
     
     required init?(coder: NSCoder) {
+        oldFrame = .zero
         super.init(coder: coder)
         commonInit()
     }
     
     private func commonInit() {
-        oldFrame = frame
         createStars()
         drawStars()
         self.addTarget(self, action: #selector(touchedDown), for: .touchDown)
@@ -67,15 +68,14 @@ class MyCustomControl: UIControl {
     override func layoutSubviews() {
         super.layoutSubviews()
         
-        if oldFrame?.size != frame.size {
+        if oldFrame.size != frame.size {
             drawStars()
+            oldFrame = frame
         }
-        
-        oldFrame = frame
     }
     
     private func createStars() {
-        stars = (0..<maximumValue).map { _ in Star() }
+        stars = (0..<maximumValue).map { _ in StarLayer() }
         layer.sublayers?.forEach { $0.removeFromSuperlayer() }
         stars.forEach { layer.addSublayer($0) }
     }
@@ -114,7 +114,7 @@ class MyCustomControl: UIControl {
     @objc private func touchedDown(control: MyCustomControl, withEvent event: UIEvent) {
         guard let touch = event.touches(for: control)?.first else { return }
         let location = touch.location(in: control)
-        guard let layerNumber = getPosition(in: location) else { return }
+        guard let layerNumber = getPositionExpanded(inside: location) else { return }
             
         let newValue = layerNumber + 1
         if newValue != value {
@@ -126,7 +126,7 @@ class MyCustomControl: UIControl {
     @objc private func dragInside(control: MyCustomControl, withEvent event: UIEvent) {
         guard let touch = event.touches(for: control)?.first else { return }
         let location = touch.location(in: control)
-        guard let layerNumber = getPosition(in: location) else { return }
+        guard let layerNumber = getPosition(inside: location) else { return }
             
         let newValue = layerNumber + 1
         if newValue != value {
@@ -149,38 +149,45 @@ class MyCustomControl: UIControl {
         }
     }
     
-    private func getPosition(in location: CGPoint) -> Int? {
-        var result: Int?
-        
-        stars.enumerated().forEach { (number, star) in
+    private func getPosition(inside location: CGPoint) -> Int? {
+        for (number, star) in stars.enumerated() {
             if star.bounds.contains(location) {
-                result = number
+                return number
             }
         }
         
-        return result
+        return nil
     }
     
     private func getPosition(outside location: CGPoint) -> Int? {
-        var result: Int?
-        
-        stars.enumerated().forEach { (number, star) in
+        for (number, star) in stars.enumerated() {
             if (location.x > star.bounds.minX) && (location.x < star.bounds.maxX) {
-                result = number
+                return number
             }
         }
         
-        return result
+        return nil
+    }
+    
+    private func getPositionExpanded(inside location: CGPoint) -> Int? {
+        for (number, star) in stars.enumerated() {
+            let expandedBounds = star.bounds.insetBy(dx: -inset / 2, dy: -inset / 2)
+            if expandedBounds.contains(location) {
+                return number
+            }
+        }
+        
+        return nil
     }
 }
 
-private class Star: CAShapeLayer {
+private class StarLayer: CAShapeLayer {
     
     // Цвета звезды, желтый и серый. В фигме заданы в hex
     private static let selectedStarColor = UIColor(red: 1.000, green: 0.796, blue: 0.078, alpha: 1)
     private static let unselectedStarColor = UIColor(red: 0.855, green: 0.855, blue: 0.855, alpha: 1)
     
-    var color: UIColor = Star.unselectedStarColor {
+    var color: UIColor = StarLayer.unselectedStarColor {
         didSet {
             self.fillColor = color.cgColor
             self.strokeColor = color.cgColor
@@ -189,7 +196,7 @@ private class Star: CAShapeLayer {
     
     var isSelected: Bool = false {
         didSet {
-            color = isSelected ? Star.selectedStarColor : Star.unselectedStarColor
+            color = isSelected ? StarLayer.selectedStarColor : StarLayer.unselectedStarColor
         }
     }
         
@@ -229,19 +236,25 @@ private class Star: CAShapeLayer {
         self.path = path.cgPath
     }
     
-    override init() {
-        super.init()
+    private func commonInit() {
         self.fillColor = color.cgColor
         self.strokeColor = color.cgColor
         self.lineJoin = .round
     }
     
+    override init() {
+        super.init()
+        commonInit()
+    }
+    
     override init(layer: Any) {
         super.init(layer: layer)
+        commonInit()
     }
     
     required init?(coder: NSCoder) {
         super.init(coder: coder)
+        commonInit()
     }
 }
 
